@@ -153,6 +153,28 @@ class WinBle {
     }
   }
 
+  /// [pair] will send a pairing command
+  static pair(String address) async {
+    try {
+      var result = await _sendRequest(
+          {"cmd": "pair", "address": address.replaceAll(":", "")});
+      print(result);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// [unPair] will send try to UnPair device
+  static unPair(String address) async {
+    try {
+      var result = await _sendRequest(
+          {"cmd": "unPair", "address": address.replaceAll(":", "")});
+      print(result);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// [disconnect] will update a Stream of boolean [getConnectionStream]
   /// and also ignore if that device is already disconnected
   static disconnect(address) async {

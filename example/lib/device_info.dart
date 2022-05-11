@@ -29,6 +29,26 @@ class _DeviceInfoState extends State<DeviceInfo> {
     await WinBle.connect(address);
   }
 
+  pair(String address) async {
+    try {
+      await WinBle.pair(address);
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    }
+  }
+
+  unPair(String address) async {
+    try {
+      await WinBle.unPair(address);
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    }
+  }
+
   disconnect(address) {
     WinBle.disconnect(address);
   }
@@ -179,6 +199,12 @@ class _DeviceInfoState extends State<DeviceInfo> {
               children: [
                 kButton("Connect", () {
                   connect(device.address);
+                }),
+                kButton("Pair", () {
+                  pair(device.address);
+                }),
+                kButton("UnPair", () {
+                  unPair(device.address);
                 }),
                 kButton("Discover Services", () {
                   discoverServices(device.address);

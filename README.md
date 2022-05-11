@@ -7,16 +7,14 @@ WinBle Plugin to use Bluetooth Low Energy in Flutter Windows
 add this package to pubspec.yaml file
 
 ```dart
-
-win_ble: 
-
+win_ble: ^0.0.2
 ```
 
 requires Windows version >= 10.0.15014
 
-Make Sure to Add this code in your =>
+Make Sure to Add this code in your project's =>
 
-`project/windows/runner/main.cpp` file , otherwise Windows Console will open on running Application
+`/windows/runner/main.cpp` file , otherwise Windows Console will open on running Application
 
 ```c++
 if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()){

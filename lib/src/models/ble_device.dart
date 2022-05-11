@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'dart:typed_data';
+
 BleDevice bleDeviceFromJson(String str) => BleDevice.fromJson(json.decode(str));
 
 String bleDeviceToJson(BleDevice data) => json.encode(data.toJson());
@@ -12,15 +14,15 @@ class BleDevice {
       required this.advType,
       required this.name,
       required this.serviceUuids,
-      this.adStructures,
-      this.manufacturerData});
+      required this.manufacturerData,
+      this.adStructures});
 
   String address;
   String name;
   String rssi;
   String timestamp;
   String advType;
-  List<int>? manufacturerData;
+  Uint8List manufacturerData;
   List<dynamic> serviceUuids;
   List<AdStructure>? adStructures;
 
@@ -31,6 +33,9 @@ class BleDevice {
         advType: json["advType"] ?? "",
         name: json["localName"] ?? "N/A",
         serviceUuids: json["serviceUuids"],
+        manufacturerData: json["manufacturerData"] != null
+            ? Uint8List.fromList(List<int>.from(json["manufacturerData"]))
+            : Uint8List.fromList(List.empty()),
         adStructures: json["adStructures"] == null
             ? null
             : List<AdStructure>.from(json["adStructures"].map((x) =>
@@ -44,7 +49,7 @@ class BleDevice {
         "advType": advType,
         "localName": name,
         "serviceUuids": serviceUuids.toString(),
-        "manufacturerData": manufacturerData,
+        "manufacturerData": manufacturerData.toString(),
       };
 }
 

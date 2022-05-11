@@ -26,7 +26,13 @@ class _DeviceInfoState extends State<DeviceInfo> {
   String error = "none";
 
   connect(String address) async {
-    await WinBle.connect(address);
+    try {
+      await WinBle.connect(address);
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    }
   }
 
   pair(String address) async {

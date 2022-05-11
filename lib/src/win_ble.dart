@@ -157,7 +157,7 @@ class WinBle {
   static pair(String address) async {
     try {
       var result = await _sendRequest(
-          {"cmd": "pair", "address": address.replaceAll(":", "")});
+          {"cmd": "pair", "device": _getDeviceFromAddress(address)});
       print(result);
     } catch (e) {
       rethrow;
@@ -168,7 +168,7 @@ class WinBle {
   static unPair(String address) async {
     try {
       var result = await _sendRequest(
-          {"cmd": "unPair", "address": address.replaceAll(":", "")});
+          {"cmd": "unPair", "device": _getDeviceFromAddress(address)});
       print(result);
     } catch (e) {
       rethrow;

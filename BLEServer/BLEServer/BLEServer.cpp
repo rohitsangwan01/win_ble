@@ -1,3 +1,7 @@
+// BLEServer.cpp : Windows 10 Web Bluetooth Polyfill Server
+//
+// Copyright (C) 2017, Uri Shaked. License: MIT.
+//
 
 #include "stdafx.h"
 #include <iostream>
@@ -43,6 +47,7 @@ std::wstring formatBluetoothAddress(unsigned long long BluetoothAddress) {
 	return ret.str();
 }
 
+
 Guid parseUuid(String^ uuid) {
 	if (uuid->Length() == 4) {
 		unsigned int uuidShort = std::stoul(uuid->Data(), 0, 16);
@@ -58,6 +63,12 @@ Guid parseUuid(String^ uuid) {
 		throw ref new InvalidArgumentException(ref new String(msg.c_str()));
 	}
 }
+
+union uint16_t_union {
+	uint16_t uint16;
+	byte bytes[sizeof(uint16_t)];
+};
+
 
 CRITICAL_SECTION OutputCriticalSection;
 
@@ -83,6 +94,7 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 	String ^addressStr = command->GetNamedString("address", "");
 	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
 	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+
 	if (device == nullptr) {
 		throw ref new FailureException(ref new String(L"Device not found (null)"));
 	}
@@ -98,6 +110,60 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 		}
 	});
 	return JsonValue::CreateStringValue(device->DeviceId);
+}
+
+concurrency::task<IJsonValue^> pairRequest(JsonObject^ command) {
+	String^ addressStr = command->GetNamedString("address", "");
+	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
+	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+
+	if (device == nullptr) {
+		throw ref new FailureException(ref new String(L"Device not found (null)"));
+	}
+
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+
+	if (!canPair) {
+		throw ref new FailureException(ref new String(L"Device Cannot Pair"));
+	}
+	else {
+		bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+		if (!isPaired) {
+			auto result = co_await	device->DeviceInformation->Pairing->PairAsync();
+			return JsonValue::CreateStringValue(result->Status.ToString());
+		}
+		else {
+			return JsonValue::CreateStringValue("Already Paired");
+		}
+	}
+	
+}
+
+concurrency::task<IJsonValue^> unPairRequest(JsonObject^ command) {
+	String^ addressStr = command->GetNamedString("address", "");
+	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
+	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+
+	if (device == nullptr) {
+		throw ref new FailureException(ref new String(L"Device not found (null)"));
+	}
+
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+
+	if (!canPair) {
+		throw ref new FailureException(ref new String(L"Device is Not Pairable"));
+	}
+	else {
+		bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+		if (!isPaired) {
+			throw ref new FailureException(ref new String(L"Device is Already UnPaired"));
+		}
+		else {
+			auto result = co_await	device->DeviceInformation->Pairing->UnpairAsync();
+			return JsonValue::CreateStringValue(result->Status.ToString());
+		}
+	}
+
 }
 
 Concurrency::task<IJsonValue^> disconnectRequest(JsonObject ^command) {
@@ -372,6 +438,14 @@ concurrency::task<void> processCommand(JsonObject ^command) {
 			result = co_await connectRequest(command);
 		}
 
+		if (cmd->Equals("pair")) {
+			result = co_await pairRequest(command);
+		}
+
+		if (cmd->Equals("unPair")) {
+			result = co_await unPairRequest(command);
+		}
+
 		if (cmd->Equals("disconnect")) {
 			result = co_await disconnectRequest(command);
 		}
@@ -451,6 +525,29 @@ int main(Array<String^>^ args) {
 		msg->Insert("advType", JsonValue::CreateStringValue(eventArgs->AdvertisementType.ToString()));
 		msg->Insert("localName", JsonValue::CreateStringValue(eventArgs->Advertisement->LocalName));
 
+		auto manufacturerSections = eventArgs->Advertisement->ManufacturerData;		
+		if (manufacturerSections->Size > 0) {
+			auto manufacturerData = manufacturerSections->GetAt(0);
+			auto finalData = ref new JsonArray();
+			auto rawMnData = manufacturerData->Data;
+			uint8_t* prefix = uint16_t_union{ manufacturerData->CompanyId }.bytes;
+			std::vector<uint8_t> companyIdData = std::vector<uint8_t>{ prefix, prefix + sizeof(uint16_t_union) };
+			std::vector<uint8_t> mnData;
+			auto dataReader = Windows::Storage::Streams::DataReader::FromBuffer(rawMnData);
+			while (dataReader->UnconsumedBufferLength > 0) {
+				auto byte = dataReader->ReadByte();
+				mnData.push_back(byte);
+			}
+			for (auto& element : companyIdData) {
+				finalData->Append(JsonValue::CreateNumberValue(element));
+			};
+			for (auto& element : mnData) {
+				finalData->Append(JsonValue::CreateNumberValue(element));
+			};
+			msg->Insert("manufacturerData", finalData);
+		}
+
+
 		// Serialise the individual raw AD structures as arrays of bytes in JSON
 		// The AD structures concatenated should contain the entire raw payload of the advertisement
 		// The entire payload is sent as JSON just in case we need other stuff in the future
@@ -478,6 +575,7 @@ int main(Array<String^>^ args) {
 			serviceUuids->Append(JsonValue::CreateStringValue(eventArgs->Advertisement->ServiceUuids->GetAt(i).ToString()));
 		}
 		msg->Insert("serviceUuids", serviceUuids);
+
 
 		// TODO manfuacturer data / flags / data sections ?
 		writeObject(msg);

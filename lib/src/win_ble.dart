@@ -153,23 +153,51 @@ class WinBle {
     }
   }
 
-  /// [pair] will send a pairing command
-  static pair(String address) async {
+  /// [canPair] will return a boolean
+  static Future<bool> canPair(String address) async {
     try {
       var result = await _sendRequest(
-          {"cmd": "pair", "device": _getDeviceFromAddress(address)});
-      print(result);
+          {"cmd": "canPair", "device": _getDeviceFromAddress(address)});
+      return result != null && result;
     } catch (e) {
       rethrow;
     }
   }
 
-  /// [unPair] will send try to UnPair device
+  /// [isPaired] will return a boolean
+  static Future<bool> isPaired(String address) async {
+    try {
+      var result = await _sendRequest(
+          {"cmd": "isPaired", "device": _getDeviceFromAddress(address)});
+      return result != null && result;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// [pair] will send a pairing command
+  /// it will be completed on Successful Pairing
+  /// or it will throw Error on Unsuccessful Pairing
+  static Future<void> pair(String address) async {
+    try {
+      var result = await _sendRequest(
+          {"cmd": "pair", "device": _getDeviceFromAddress(address)});
+      if (result == null || result != "Paired") {
+        throw result;
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// [unPair] will try to Un-pair
   static unPair(String address) async {
     try {
       var result = await _sendRequest(
           {"cmd": "unPair", "device": _getDeviceFromAddress(address)});
-      print(result);
+      if (result == null || result != "Unpaired") {
+        throw result;
+      }
     } catch (e) {
       rethrow;
     }

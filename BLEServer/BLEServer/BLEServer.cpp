@@ -112,58 +112,67 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 	return JsonValue::CreateStringValue(device->DeviceId);
 }
 
-concurrency::task<IJsonValue^> pairRequest(JsonObject^ command) {
-	String^ addressStr = command->GetNamedString("address", "");
-	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
-	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+auto CustomOnPairingRequested = ref new Windows::Foundation::TypedEventHandler<Enumeration::DeviceInformationCustomPairing^, Enumeration::DevicePairingRequestedEventArgs^>
+	([](Windows::Devices::Enumeration::DeviceInformationCustomPairing^ sender, Windows::Devices::Enumeration::DevicePairingRequestedEventArgs^ eventArgs) {
+	eventArgs->Accept();
+	});
 
-	if (device == nullptr) {
-		throw ref new FailureException(ref new String(L"Device not found (null)"));
-	}
+
+concurrency::task<IJsonValue^> pairRequest(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+
+	Windows::Foundation::EventRegistrationToken cookie = device->DeviceInformation->Pairing->Custom->PairingRequested += CustomOnPairingRequested;
+
+	auto result = co_await device->DeviceInformation->Pairing->Custom->PairAsync(Enumeration::DevicePairingKinds::ConfirmOnly, Enumeration::DevicePairingProtectionLevel::None);
+
+	device->DeviceInformation->Pairing->Custom->PairingRequested -= cookie;
 
 	bool canPair = device->DeviceInformation->Pairing->CanPair;
 
-	if (!canPair) {
-		throw ref new FailureException(ref new String(L"Device Cannot Pair"));
-	}
-	else {
-		bool isPaired = device->DeviceInformation->Pairing->IsPaired;
-		if (!isPaired) {
-			auto result = co_await	device->DeviceInformation->Pairing->PairAsync();
-			return JsonValue::CreateStringValue(result->Status.ToString());
-		}
-		else {
-			return JsonValue::CreateStringValue("Already Paired");
-		}
-	}
-	
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+
+	return JsonValue::CreateStringValue(result->Status.ToString());
 }
 
-concurrency::task<IJsonValue^> unPairRequest(JsonObject^ command) {
-	String^ addressStr = command->GetNamedString("address", "");
-	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
-	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
-
-	if (device == nullptr) {
-		throw ref new FailureException(ref new String(L"Device not found (null)"));
+JsonValue^ canPair(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
 	}
-
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
 	bool canPair = device->DeviceInformation->Pairing->CanPair;
 
-	if (!canPair) {
-		throw ref new FailureException(ref new String(L"Device is Not Pairable"));
-	}
-	else {
-		bool isPaired = device->DeviceInformation->Pairing->IsPaired;
-		if (!isPaired) {
-			throw ref new FailureException(ref new String(L"Device is Already UnPaired"));
-		}
-		else {
-			auto result = co_await	device->DeviceInformation->Pairing->UnpairAsync();
-			return JsonValue::CreateStringValue(result->Status.ToString());
-		}
-	}
+	return JsonValue::CreateBooleanValue(canPair);
+}
 
+JsonValue^ isPaired(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+	return JsonValue::CreateBooleanValue(isPaired);
+}
+
+
+
+concurrency::task<IJsonValue^> unPairRequest(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+
+	auto result = co_await	device->DeviceInformation->Pairing->UnpairAsync();
+
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+
+	return JsonValue::CreateStringValue(result->Status.ToString());
 }
 
 Concurrency::task<IJsonValue^> disconnectRequest(JsonObject ^command) {
@@ -428,16 +437,19 @@ concurrency::task<void> processCommand(JsonObject ^command) {
 			bleAdvertisementWatcher->Start();
 			result = JsonValue::CreateNullValue();
 		}
-
 		if (cmd->Equals("stopScan")) {
 			bleAdvertisementWatcher->Stop();
 			result = JsonValue::CreateNullValue();
 		}
-
 		if (cmd->Equals("connect")) {
 			result = co_await connectRequest(command);
 		}
-
+		if (cmd->Equals("canPair")) {
+			result = canPair(command);
+		}
+		if (cmd->Equals("isPaired")) {
+			result = isPaired(command);
+		}
 		if (cmd->Equals("pair")) {
 			result = co_await pairRequest(command);
 		}

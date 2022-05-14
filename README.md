@@ -77,9 +77,7 @@ To Stop Scan , Call
   scanStream?.cancel();
 ```
 
-Rest All Methods are
-
-To Connect to Ble Device , call
+To Connect 
 ```dart
    await WinBle.connect(address);
 
@@ -112,7 +110,7 @@ Pairing Options
   // To Check if Device is Already Paired
   bool isPaired = await WinBle.isPaired(address);
 ```
-
+Rest All Methods are
 ```dart
 // To Get Services
     var services = await WinBle.discoverServices(address);

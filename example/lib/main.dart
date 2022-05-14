@@ -115,6 +115,7 @@ class _MyAppState extends State<MyApp> {
                             leading:
                                 Text(device.name.isEmpty ? "N/A" : device.name),
                             title: Text(device.address),
+                            // trailing: Text(device.manufacturerData.toString()),
                             subtitle: Text(
                                 "rssi : ${device.rssi} | AdvTpe : ${device.advType}")),
                       ),

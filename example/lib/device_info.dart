@@ -25,12 +25,78 @@ class _DeviceInfoState extends State<DeviceInfo> {
   String result = "";
   String error = "none";
 
+  final _snackbarDuration = const Duration(milliseconds: 700);
+
+  void showSuccess(String value) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(value),
+          backgroundColor: Colors.green,
+          duration: _snackbarDuration));
+
+  void showError(String value) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(value),
+          backgroundColor: Colors.red,
+          duration: _snackbarDuration));
+
+  void showNotification(String value) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(value),
+          backgroundColor: Colors.blue,
+          duration: _snackbarDuration));
+
   connect(String address) async {
-    await WinBle.connect(address);
+    try {
+      await WinBle.connect(address);
+      showSuccess("Connected");
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    }
   }
 
-  disconnect(address) {
-    WinBle.disconnect(address);
+  canPair(address) async {
+    bool canPair = await WinBle.canPair(address);
+    showNotification("CanPair : $canPair");
+  }
+
+  isPaired(address) async {
+    bool isPaired = await WinBle.isPaired(address);
+    showNotification("isPaired : $isPaired");
+  }
+
+  pair(String address) async {
+    try {
+      await WinBle.pair(address);
+      showSuccess("Paired Successfully");
+    } catch (e) {
+      showError("PairError : $e");
+      setState(() {
+        error = e.toString();
+      });
+    }
+  }
+
+  unPair(String address) async {
+    try {
+      await WinBle.unPair(address);
+      showSuccess("UnPaired Successfully");
+    } catch (e) {
+      showError("UnPairError : $e");
+      setState(() {
+        error = e.toString();
+      });
+    }
+  }
+
+  disconnect(address) async {
+    try {
+      await WinBle.disconnect(address);
+      showSuccess("Disconnected");
+    } catch (e) {
+      showError(e.toString());
+    }
   }
 
   discoverServices(address) async {
@@ -41,6 +107,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
         services = data;
       });
     } catch (e) {
+      showError("DiscoverServiceError : $e");
       setState(() {
         error = e.toString();
       });
@@ -56,6 +123,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
         characteristics = bleChar;
       });
     } catch (e) {
+      showError("DiscoverCharError : $e");
       setState(() {
         error = e.toString();
       });
@@ -72,6 +140,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
             "Read => List<int> : $data    ,    ToString :  ${String.fromCharCodes(data)}   , Time : ${DateTime.now()}";
       });
     } catch (e) {
+      showError("ReadCharError : $e");
       setState(() {
         error = e.toString();
       });
@@ -88,6 +157,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
           data: data,
           writeWithResponse: writeWithResponse);
     } catch (e) {
+      showError("writeCharError : $e");
       setState(() {
         error = e.toString();
       });
@@ -98,7 +168,9 @@ class _DeviceInfoState extends State<DeviceInfo> {
     try {
       await WinBle.subscribeToCharacteristic(
           address: address, serviceId: serviceID, characteristicId: charID);
+      showSuccess("Subscribe Successfully");
     } catch (e) {
+      showError("SubscribeCharError : $e");
       setState(() {
         error = e.toString() + " Date ${DateTime.now()}";
       });
@@ -109,7 +181,9 @@ class _DeviceInfoState extends State<DeviceInfo> {
     try {
       await WinBle.unSubscribeFromCharacteristic(
           address: address, serviceId: serviceID, characteristicId: charID);
+      showSuccess("Unsubscribed Successfully");
     } catch (e) {
+      showError("UnSubscribeError : $e");
       setState(() {
         error = e.toString() + " Date ${DateTime.now()}";
       });
@@ -180,9 +254,21 @@ class _DeviceInfoState extends State<DeviceInfo> {
                 kButton("Connect", () {
                   connect(device.address);
                 }),
+                kButton("canPair", () {
+                  canPair(device.address);
+                }, enabled: connected),
+                kButton("isPaired", () {
+                  isPaired(device.address);
+                }, enabled: connected),
+                kButton("Pair", () {
+                  pair(device.address);
+                }, enabled: connected),
+                kButton("UnPair", () {
+                  unPair(device.address);
+                }, enabled: connected),
                 kButton("Discover Services", () {
                   discoverServices(device.address);
-                }),
+                }, enabled: connected),
                 kButton("Disconnect", () {
                   disconnect(device.address);
                 }),
@@ -246,7 +332,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
                 kButton("Read Characteristics", () {
                   readCharacteristic(
                       device.address, serviceTxt.text, characteristicTxt.text);
-                }),
+                }, enabled: connected),
                 kButton("Write Characteristics", () {
                   if (uint8DataTxt.text == "") {
                     setState(() {
@@ -262,7 +348,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
                       .toList());
                   writeCharacteristic(device.address, serviceTxt.text,
                       characteristicTxt.text, data, true);
-                }),
+                }, enabled: connected),
               ],
             ),
             const SizedBox(height: 10),
@@ -273,11 +359,11 @@ class _DeviceInfoState extends State<DeviceInfo> {
                 kButton("Subscribe Characteristics", () {
                   subsCribeToCharacteristic(
                       device.address, serviceTxt.text, characteristicTxt.text);
-                }),
+                }, enabled: connected),
                 kButton("UnSubscribe Characteristics", () {
                   unSubscribeToCharacteristic(
                       device.address, serviceTxt.text, characteristicTxt.text);
-                }),
+                }, enabled: connected),
               ],
             ),
 
@@ -307,9 +393,9 @@ class _DeviceInfoState extends State<DeviceInfo> {
     );
   }
 
-  kButton(String txt, onTap) {
+  kButton(String txt, onTap, {bool enabled = true}) {
     return ElevatedButton(
-      onPressed: onTap,
+      onPressed: enabled ? onTap : null,
       child: Text(
         txt,
         style: const TextStyle(fontSize: 20),

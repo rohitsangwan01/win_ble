@@ -1,3 +1,7 @@
+// BLEServer.cpp : Windows 10 Web Bluetooth Polyfill Server
+//
+// Copyright (C) 2017, Uri Shaked. License: MIT.
+//
 
 #include "stdafx.h"
 #include <iostream>
@@ -43,6 +47,7 @@ std::wstring formatBluetoothAddress(unsigned long long BluetoothAddress) {
 	return ret.str();
 }
 
+
 Guid parseUuid(String^ uuid) {
 	if (uuid->Length() == 4) {
 		unsigned int uuidShort = std::stoul(uuid->Data(), 0, 16);
@@ -58,6 +63,12 @@ Guid parseUuid(String^ uuid) {
 		throw ref new InvalidArgumentException(ref new String(msg.c_str()));
 	}
 }
+
+union uint16_t_union {
+	uint16_t uint16;
+	byte bytes[sizeof(uint16_t)];
+};
+
 
 CRITICAL_SECTION OutputCriticalSection;
 
@@ -83,6 +94,7 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 	String ^addressStr = command->GetNamedString("address", "");
 	unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
 	auto device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+
 	if (device == nullptr) {
 		throw ref new FailureException(ref new String(L"Device not found (null)"));
 	}
@@ -98,6 +110,69 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 		}
 	});
 	return JsonValue::CreateStringValue(device->DeviceId);
+}
+
+auto CustomOnPairingRequested = ref new Windows::Foundation::TypedEventHandler<Enumeration::DeviceInformationCustomPairing^, Enumeration::DevicePairingRequestedEventArgs^>
+	([](Windows::Devices::Enumeration::DeviceInformationCustomPairing^ sender, Windows::Devices::Enumeration::DevicePairingRequestedEventArgs^ eventArgs) {
+	eventArgs->Accept();
+	});
+
+
+concurrency::task<IJsonValue^> pairRequest(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+
+	Windows::Foundation::EventRegistrationToken cookie = device->DeviceInformation->Pairing->Custom->PairingRequested += CustomOnPairingRequested;
+
+	auto result = co_await device->DeviceInformation->Pairing->Custom->PairAsync(Enumeration::DevicePairingKinds::ConfirmOnly, Enumeration::DevicePairingProtectionLevel::None);
+
+	device->DeviceInformation->Pairing->Custom->PairingRequested -= cookie;
+
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+
+	return JsonValue::CreateStringValue(result->Status.ToString());
+}
+
+JsonValue^ canPair(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+
+	return JsonValue::CreateBooleanValue(canPair);
+}
+
+JsonValue^ isPaired(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+	return JsonValue::CreateBooleanValue(isPaired);
+}
+
+
+
+concurrency::task<IJsonValue^> unPairRequest(JsonObject^ command) {
+	String^ deviceId = command->GetNamedString("device", "");
+	if (!devices->HasKey(deviceId)) {
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
+	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
+
+	auto result = co_await	device->DeviceInformation->Pairing->UnpairAsync();
+
+	bool canPair = device->DeviceInformation->Pairing->CanPair;
+	bool isPaired = device->DeviceInformation->Pairing->IsPaired;
+
+	return JsonValue::CreateStringValue(result->Status.ToString());
 }
 
 Concurrency::task<IJsonValue^> disconnectRequest(JsonObject ^command) {
@@ -362,14 +437,25 @@ concurrency::task<void> processCommand(JsonObject ^command) {
 			bleAdvertisementWatcher->Start();
 			result = JsonValue::CreateNullValue();
 		}
-
 		if (cmd->Equals("stopScan")) {
 			bleAdvertisementWatcher->Stop();
 			result = JsonValue::CreateNullValue();
 		}
-
 		if (cmd->Equals("connect")) {
 			result = co_await connectRequest(command);
+		}
+		if (cmd->Equals("canPair")) {
+			result = canPair(command);
+		}
+		if (cmd->Equals("isPaired")) {
+			result = isPaired(command);
+		}
+		if (cmd->Equals("pair")) {
+			result = co_await pairRequest(command);
+		}
+
+		if (cmd->Equals("unPair")) {
+			result = co_await unPairRequest(command);
 		}
 
 		if (cmd->Equals("disconnect")) {
@@ -451,6 +537,29 @@ int main(Array<String^>^ args) {
 		msg->Insert("advType", JsonValue::CreateStringValue(eventArgs->AdvertisementType.ToString()));
 		msg->Insert("localName", JsonValue::CreateStringValue(eventArgs->Advertisement->LocalName));
 
+		auto manufacturerSections = eventArgs->Advertisement->ManufacturerData;		
+		if (manufacturerSections->Size > 0) {
+			auto manufacturerData = manufacturerSections->GetAt(0);
+			auto finalData = ref new JsonArray();
+			auto rawMnData = manufacturerData->Data;
+			uint8_t* prefix = uint16_t_union{ manufacturerData->CompanyId }.bytes;
+			std::vector<uint8_t> companyIdData = std::vector<uint8_t>{ prefix, prefix + sizeof(uint16_t_union) };
+			std::vector<uint8_t> mnData;
+			auto dataReader = Windows::Storage::Streams::DataReader::FromBuffer(rawMnData);
+			while (dataReader->UnconsumedBufferLength > 0) {
+				auto byte = dataReader->ReadByte();
+				mnData.push_back(byte);
+			}
+			for (auto& element : companyIdData) {
+				finalData->Append(JsonValue::CreateNumberValue(element));
+			};
+			for (auto& element : mnData) {
+				finalData->Append(JsonValue::CreateNumberValue(element));
+			};
+			msg->Insert("manufacturerData", finalData);
+		}
+
+
 		// Serialise the individual raw AD structures as arrays of bytes in JSON
 		// The AD structures concatenated should contain the entire raw payload of the advertisement
 		// The entire payload is sent as JSON just in case we need other stuff in the future
@@ -478,6 +587,7 @@ int main(Array<String^>^ args) {
 			serviceUuids->Append(JsonValue::CreateStringValue(eventArgs->Advertisement->ServiceUuids->GetAt(i).ToString()));
 		}
 		msg->Insert("serviceUuids", serviceUuids);
+
 
 		// TODO manfuacturer data / flags / data sections ?
 		writeObject(msg);

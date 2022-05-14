@@ -1,3 +1,10 @@
+## 0.0.2
+
+- Added ManufacturerData
+- Added Option to Pair/UnPair Ble Device
+- Added ability to check ( canPair / isPaired ) Status
+- minor Bug fixes
+
 ## 0.0.1
 
 - initial Version

@@ -99,7 +99,7 @@ To Disconnect
 Pairing Options
 ```dart
   // To Pair
-   await WinBle.pair(address);
+  await WinBle.pair(address);
 
   // To UnPair
   await WinBle.unPair(address);
@@ -117,7 +117,6 @@ Rest All Methods are
 
 // To Get Characteristic
   List<BleCharacteristic> bleCharacteristics = await WinBle.discoverCharacteristics(address: address, serviceId: serviceID);
-
 
 // To Read Characteristic
   List<int> data = await WinBle.read(address: address, serviceId: serviceID, characteristicId: charID);

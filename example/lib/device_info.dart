@@ -95,6 +95,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
       await WinBle.disconnect(address);
       showSuccess("Disconnected");
     } catch (e) {
+      if (!mounted) return;
       showError(e.toString());
     }
   }

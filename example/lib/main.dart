@@ -18,13 +18,25 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription? scanStream;
+  StreamSubscription? connectionStream;
+
+  bool isScanning = false;
 
   @override
   void initState() {
     WinBle.initialize(enableLog: true);
     // call winBLe.dispose() when done
-    WinBle.connectionStream.listen((event) {
+    connectionStream = WinBle.connectionStream.listen((event) {
       print("Connection Event : " + event.toString());
+    });
+
+    // Listen to Scan Stream , we can cancel in onDispose()
+    scanStream = WinBle.scanStream.listen((event) {
+      setState(() {
+        if (!devices.any((element) => element.address == event.address)) {
+          devices.add(event);
+        }
+      });
     });
     super.initState();
   }
@@ -36,18 +48,17 @@ class _MyAppState extends State<MyApp> {
 
   /// Main Methods
   startScanning() {
-    scanStream = WinBle.startScanning().listen((event) {
-      setState(() {
-        if (!devices.any((element) => element.address == event.address)) {
-          devices.add(event);
-        }
-      });
+    WinBle.startScanning();
+    setState(() {
+      isScanning = true;
     });
   }
 
   stopScanning() {
     WinBle.stopScanning();
-    scanStream?.cancel();
+    setState(() {
+      isScanning = false;
+    });
   }
 
   onDeviceTap(BleDevice device) {
@@ -63,6 +74,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     scanStream?.cancel();
+    connectionStream?.cancel();
     super.dispose();
   }
 
@@ -92,49 +104,77 @@ class _MyAppState extends State<MyApp> {
                   }),
                 ],
               ),
-
+              const Divider(),
               Column(
                 children: [
                   Text(bleStatus),
                   Text(bleError),
                 ],
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: devices.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    BleDevice device = devices[index];
-                    return InkWell(
-                      onTap: () {
-                        stopScanning();
 
-                        onDeviceTap(device);
-                      },
-                      child: Card(
-                        child: ListTile(
-                            leading:
-                                Text(device.name.isEmpty ? "N/A" : device.name),
-                            title: Text(device.address),
-                            // trailing: Text(device.manufacturerData.toString()),
-                            subtitle: Text(
-                                "rssi : ${device.rssi} | AdvTpe : ${device.advType}")),
+              Expanded(
+                child: devices.isEmpty
+                    ? noDeviceFoundWidget()
+                    : ListView.builder(
+                        itemCount: devices.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          BleDevice device = devices[index];
+                          return InkWell(
+                            onTap: () {
+                              stopScanning();
+
+                              onDeviceTap(device);
+                            },
+                            child: Card(
+                              child: ListTile(
+                                  leading: Text(device.name.isEmpty
+                                      ? "N/A"
+                                      : device.name),
+                                  title: Text(device.address),
+                                  // trailing: Text(device.manufacturerData.toString()),
+                                  subtitle: Text(
+                                      "rssi : ${device.rssi} | AdvTpe : ${device.advType}")),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
         ));
   }
 
-  kButton(String txt, onTap) {
+  Widget kButton(String txt, onTap) {
     return ElevatedButton(
       onPressed: onTap,
       child: Text(
         txt,
         style: const TextStyle(fontSize: 20),
       ),
+    );
+  }
+
+  Widget noDeviceFoundWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        isScanning
+            ? const CircularProgressIndicator()
+            : InkWell(
+                onTap: () {
+                  startScanning();
+                },
+                child: const Icon(
+                  Icons.bluetooth,
+                  size: 100,
+                  color: Colors.grey,
+                ),
+              ),
+        const SizedBox(
+          height: 10,
+        ),
+        Text(isScanning ? "Scanning Devices ... " : "Click to start scanning")
+      ],
     );
   }
 }

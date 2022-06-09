@@ -77,18 +77,41 @@ To Stop Scan , Call
   scanStream?.cancel();
 ```
 
-Rest All Methods are
-
+To Connect 
 ```dart
-
 // To Connect
   await WinBle.connect(address);
 
+// Get Connection Updates Here
+  StreamSubscription  _connectionStream =
+        WinBle.connectionStreamOf(device.address).listen((event) {
+      // event will be a boolean , in which
+      // true => Connected
+      // false => Disconnected
+    });
+```
 
-// To Disconnect
+To Disconnect
+```dart
   await WinBle.disconnect(address);
+```
 
+Pairing Options
+```dart
+  // To Pair
+   await WinBle.pair(address);
 
+  // To UnPair
+  await WinBle.unPair(address);
+
+  // To Check if Device can be Paired
+  bool canPair = await WinBle.canPair(address);
+
+  // To Check if Device is Already Paired
+  bool isPaired = await WinBle.isPaired(address);
+```
+Rest All Methods are
+```dart
 // To Get Services
   var services = await WinBle.discoverServices(address);
 
@@ -108,22 +131,15 @@ Rest All Methods are
 // To Stop Subscription
   await WinBle.unSubscribeFromCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
-// Get Connection Updates Here
-  StreamSubscription  _connectionStream =
-        WinBle.connectionStreamOf(device.address).listen((event) {
-      // event will be a boolean , in which
-      // true => Connected
-      // false => Disconnected
-    });
-
-  // Get Characteristic Value Updates Here
+// Get Characteristic Value Updates Here
    StreamSubscription _characteristicValueStream =
         WinBle.characteristicValueStream.listen((event) {
-     // Here We will Receive All Characteristic Evens
+     // Here We will Receive All Characteristic Events
     });
 
 ```
 
 ## Additional information
+Thanks to [noble-winrt](https://github.com/urish/noble-winrt) for initial BleServer Code
 
 This is Just The Initial Version feel free to Contribute or Report any Bug!

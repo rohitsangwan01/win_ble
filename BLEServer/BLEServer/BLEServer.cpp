@@ -101,6 +101,7 @@ concurrency::task<IJsonValue^> connectRequest(JsonObject ^command) {
 	devices->Insert(device->DeviceId, device);
 	device->ConnectionStatusChanged += ref new Windows::Foundation::TypedEventHandler<Bluetooth::BluetoothLEDevice ^, Platform::Object ^>(
 		[](Windows::Devices::Bluetooth::BluetoothLEDevice^ device, Platform::Object^ eventArgs) {
+
 		if (device->ConnectionStatus == Bluetooth::BluetoothConnectionStatus::Disconnected) {
 			JsonObject^ msg = ref new JsonObject();
 			msg->Insert("_type", JsonValue::CreateStringValue("disconnectEvent"));
@@ -120,8 +121,10 @@ auto CustomOnPairingRequested = ref new Windows::Foundation::TypedEventHandler<E
 
 concurrency::task<IJsonValue^> pairRequest(JsonObject^ command) {
 	String^ deviceId = command->GetNamedString("device", "");
+
 	if (!devices->HasKey(deviceId)) {
-		throw ref new FailureException(ref new String(L"Device not found"));	}
+		throw ref new FailureException(ref new String(L"Device not found"));
+	}
 	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
 
 	Windows::Foundation::EventRegistrationToken cookie = device->DeviceInformation->Pairing->Custom->PairingRequested += CustomOnPairingRequested;
@@ -334,9 +337,10 @@ concurrency::task<IJsonValue^> writeRequest(JsonObject ^command) {
 	for (unsigned int i = 0; i < dataArray->Size; i++) {
 		writer->WriteByte((unsigned char)dataArray->GetNumberAt(i));
 	}
-
-	bool writeWithoutResponse = (unsigned int)characteristic->CharacteristicProperties & (unsigned int)Bluetooth::GenericAttributeProfile::GattCharacteristicProperties::WriteWithoutResponse;
-	auto writeType = writeWithoutResponse ? Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithoutResponse : Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithResponse;
+	//bool writeWithoutResponse = (unsigned int)characteristic->CharacteristicProperties & (unsigned int)Bluetooth::GenericAttributeProfile::GattCharacteristicProperties::WriteWithoutResponse;
+	//auto writeType = writeWithoutResponse ? Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithoutResponse : Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithResponse;
+	bool writeWithResponse = command->GetNamedBoolean("writeWithResponse");
+	auto writeType = writeWithResponse ? Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithResponse : Bluetooth::GenericAttributeProfile::GattWriteOption::WriteWithoutResponse;
 	auto status = co_await characteristic->WriteValueAsync(writer->DetachBuffer(), writeType);
 	if (status != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success) {
 		throw ref new FailureException(status.ToString());

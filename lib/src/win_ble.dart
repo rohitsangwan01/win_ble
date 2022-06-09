@@ -20,9 +20,9 @@ class WinBle {
   /// [Stream Controllers]
   static StreamController<BleDevice> _scanStreamController =
       StreamController.broadcast();
-  static StreamController _responseStreamController =
+  static StreamController<Map<String, dynamic>> _responseStreamController =
       StreamController.broadcast();
-  static StreamController _connectionStreamController =
+  static StreamController<Map<String, dynamic>> _connectionStreamController =
       StreamController.broadcast();
   static StreamController _characteristicValueStreamController =
       StreamController.broadcast();
@@ -67,7 +67,7 @@ class WinBle {
   }
 
   /// call [dispose] method to close all resources
-  static dispose() {
+  static void dispose() {
     //Close Controllers
     _scanStreamController.close();
     _responseStreamController.close();
@@ -122,13 +122,12 @@ class WinBle {
   }
 
   /// To [Start Scanning ]
-  static Stream<BleDevice> startScanning() {
+  static void startScanning() {
     _sendMessage({"cmd": "scan"});
-    return _scanStreamController.stream;
   }
 
   /// To [Stop Scanning]
-  static stopScanning() {
+  static void stopScanning() {
     _sendMessage({"cmd": "stopScan"});
   }
 
@@ -136,7 +135,7 @@ class WinBle {
   /// true if connected
   /// false if disconnected
 
-  static connect(String address) async {
+  static Future<void> connect(String address) async {
     try {
       var result = await _sendRequest(
           {"cmd": "connect", "address": address.replaceAll(":", "")});
@@ -191,7 +190,7 @@ class WinBle {
   }
 
   /// [unPair] will try to Un-pair
-  static unPair(String address) async {
+  static Future<void> unPair(String address) async {
     try {
       var result = await _sendRequest(
           {"cmd": "unPair", "device": _getDeviceFromAddress(address)});
@@ -205,7 +204,7 @@ class WinBle {
 
   /// [disconnect] will update a Stream of boolean [getConnectionStream]
   /// and also ignore if that device is already disconnected
-  static disconnect(address) async {
+  static Future<void> disconnect(address) async {
     // this will get a Void Callback
     try {
       await _sendRequest(
@@ -225,10 +224,10 @@ class WinBle {
   }
 
   /// [discoverServices] will return a list of services List
-  static discoverServices(address) async {
+  static Future<List<String>> discoverServices(address) async {
     List? services = await _sendRequest(
         {"cmd": "services", "device": _getDeviceFromAddress(address)});
-    return services?.map((e) => fromWindowsUuid(e)).toList();
+    return services?.map((e) => fromWindowsUuid(e)).toList() ?? [];
   }
 
   /// [discoverCharacteristics] will return a list of [BleCharacteristic]
@@ -259,7 +258,7 @@ class WinBle {
 
   /// [write] will write characteristic value and returns error if something is wrong
   /// wrap in try catch to capture error
-  static Future write(
+  static Future<void> write(
       {required String address,
       required String service,
       required String characteristic,
@@ -271,13 +270,14 @@ class WinBle {
       "service": toWindowsUuid(service),
       "characteristic": toWindowsUuid(characteristic),
       "value": data,
+      "writeWithResponse": writeWithResponse
     });
   }
 
   /// [subscribeToCharacteristic] will subscribe to characteristic and
   /// we can get update on [connectionStream]
   /// call [connectionStreamOf] to get value of specific characteristic
-  static subscribeToCharacteristic(
+  static Future<void> subscribeToCharacteristic(
       {required String address,
       required String serviceId,
       required String characteristicId}) async {
@@ -292,12 +292,11 @@ class WinBle {
         "serviceId": serviceId,
         "characteristicId": characteristicId
       };
-      print(_subscriptions);
     });
   }
 
   /// [unsubscribeFromCharacteristic] will unsubscribe from characteristic , throws error if this characteristic is not subscribed
-  static unSubscribeFromCharacteristic(
+  static Future<void> unSubscribeFromCharacteristic(
       {required String address,
       required String serviceId,
       required String characteristicId}) async {
@@ -308,16 +307,17 @@ class WinBle {
       "characteristic": toWindowsUuid(characteristicId),
     }).then((result) {
       _subscriptions.remove(result.toString());
-      print(_subscriptions);
     });
   }
 
   /// All Streams
   /// we can get [connectionStream] to get update on connection
-  static Stream get connectionStream => _connectionStreamController.stream;
+  static Stream<Map<String, dynamic>> get connectionStream =>
+      _connectionStreamController.stream;
+  static Stream<BleDevice> get scanStream => _scanStreamController.stream;
 
   /// to get [connection update] for a specific device
-  static Stream connectionStreamOf(String address) =>
+  static Stream<bool> connectionStreamOf(String address) =>
       _connectionStreamController.stream
           .where((event) => event["device"] == address)
           .map((event) => event["connected"]);
@@ -387,7 +387,7 @@ class WinBle {
     return data['result'];
   }
 
-  static _sendMessage(message) {
+  static void _sendMessage(message) {
     String data = json.encode(message);
     List<int> dataBufInt = utf8.encode(data);
     List<int> lenBufInt = createUInt32LE(dataBufInt.length);

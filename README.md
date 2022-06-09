@@ -7,7 +7,7 @@ WinBle Plugin to use Bluetooth Low Energy in Flutter Windows
 add this package to pubspec.yaml file
 
 ```dart
-win_ble: ^0.0.2
+win_ble: ^0.0.4
 ```
 
 requires Windows version >= 10.0.15014
@@ -64,8 +64,8 @@ Dispose WinBle after using , by Calling
 To Start Scan , Call
 
 ```dart
- StreamSubscription? scanStream;
- scanStream = WinBle.startScanning().listen((event) {
+ WinBle.startScanning();
+ StreamSubscription? scanStream = WinBle.scanStream.listen((event) {
   // Get Devices Here
  });
 ```
@@ -79,9 +79,10 @@ To Stop Scan , Call
 
 To Connect 
 ```dart
-   await WinBle.connect(address);
+// To Connect
+  await WinBle.connect(address);
 
-   // Get Connection Updates Here
+// Get Connection Updates Here
   StreamSubscription  _connectionStream =
         WinBle.connectionStreamOf(device.address).listen((event) {
       // event will be a boolean , in which
@@ -92,14 +93,13 @@ To Connect
 
 To Disconnect
 ```dart
-   await WinBle.disconnect(address);
+  await WinBle.disconnect(address);
 ```
-
 
 Pairing Options
 ```dart
   // To Pair
-   await WinBle.pair(address);
+  await WinBle.pair(address);
 
   // To UnPair
   await WinBle.unPair(address);
@@ -113,23 +113,22 @@ Pairing Options
 Rest All Methods are
 ```dart
 // To Get Services
-    var services = await WinBle.discoverServices(address);
+  var services = await WinBle.discoverServices(address);
 
 // To Get Characteristic
-    List<BleCharacteristic> bleCharacteristics = await WinBle.discoverCharacteristics(address: address, serviceId: serviceID);
-
+  List<BleCharacteristic> bleCharacteristics = await WinBle.discoverCharacteristics(address: address, serviceId: serviceID);
 
 // To Read Characteristic
-    List<int> data = await WinBle.read(address: address, serviceId: serviceID, characteristicId: charID);
+  List<int> data = await WinBle.read(address: address, serviceId: serviceID, characteristicId: charID);
 
 // To Write Characteristic
-    await WinBle.write( address: address, service: serviceID,  characteristic: charID,  data: data, writeWithResponse: writeWithResponse);
+  await WinBle.write( address: address, service: serviceID,  characteristic: charID,  data: data, writeWithResponse: writeWithResponse);
 
 // To Start Subscription
-    await WinBle.subscribeToCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
+  await WinBle.subscribeToCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
 // To Stop Subscription
-    await WinBle.unSubscribeFromCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
+  await WinBle.unSubscribeFromCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
 // Get Characteristic Value Updates Here
    StreamSubscription _characteristicValueStream =

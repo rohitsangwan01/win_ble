@@ -61,6 +61,15 @@ Dispose WinBle after using , by Calling
  WinBle.dispose();
 ```
 
+To Get Bluetooth Status , Call
+
+```dart
+  WinBle.bleState.listen((BleState state) {
+    // Get BleState (On, Off, Unknown, Disabled, Unsupported)
+  });
+```
+
+
 To Start Scan , Call
 
 ```dart

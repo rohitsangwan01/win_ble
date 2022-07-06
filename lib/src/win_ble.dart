@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print, prefer_final_fields
+// ignore_for_file: avoid_print, prefer_final_fields, constant_identifier_names
 
 import 'dart:async';
 import 'dart:convert';
@@ -16,6 +16,7 @@ class WinBle {
   static Map<String, Map<String, String>> _subscriptions = {};
   static bool _showLog = false;
   static late Process _bleServer;
+  static String _previousBleState = "";
 
   /// [Stream Controllers]
   static StreamController<BleDevice> _scanStreamController =
@@ -25,6 +26,8 @@ class WinBle {
   static StreamController<Map<String, dynamic>> _connectionStreamController =
       StreamController.broadcast();
   static StreamController _characteristicValueStreamController =
+      StreamController.broadcast();
+  static StreamController<BleState> _bleStateStreamController =
       StreamController.broadcast();
 
   /// [Stream Subscriptions]
@@ -87,6 +90,12 @@ class WinBle {
       case "scanResult":
         BleDevice device = BleDevice.fromJson(message);
         _scanStreamController.add(device);
+        break;
+      case "ble_state":
+        String state = message["state"];
+        if (state == _previousBleState) return;
+        _previousBleState = state;
+        _bleStateStreamController.add(bleStateFromResponse(state));
         break;
       case "response":
         _responseStreamController.add({
@@ -316,6 +325,9 @@ class WinBle {
       _connectionStreamController.stream;
   static Stream<BleDevice> get scanStream => _scanStreamController.stream;
 
+  /// [bleState] is a stream to get current Ble Status
+  static Stream<BleState> get bleState => _bleStateStreamController.stream;
+
   /// to get [connection update] for a specific device
   static Stream<bool> connectionStreamOf(String address) =>
       _connectionStreamController.stream
@@ -395,3 +407,6 @@ class WinBle {
     _bleServer.stdin.add(dataBufInt);
   }
 }
+
+/// [BleState] is an Enum to represent current state of BLE
+enum BleState { On, Off, Unknown, Disabled, Unsupported }

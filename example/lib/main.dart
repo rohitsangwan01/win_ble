@@ -19,8 +19,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   StreamSubscription? scanStream;
   StreamSubscription? connectionStream;
+  StreamSubscription? bleStateStream;
 
   bool isScanning = false;
+  BleState bleState = BleState.Unknown;
 
   @override
   void initState() {
@@ -38,6 +40,13 @@ class _MyAppState extends State<MyApp> {
         }
       });
     });
+
+    // Listen to Ble State Stream
+    bleStateStream = WinBle.bleState.listen((BleState state) {
+      setState(() {
+        bleState = state;
+      });
+    });
     super.initState();
   }
 
@@ -48,6 +57,13 @@ class _MyAppState extends State<MyApp> {
 
   /// Main Methods
   startScanning() {
+    // if (bleState != BleState.On) {
+    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    //       content: Text("Please Check your Bluetooth , State : $bleState"),
+    //       backgroundColor: Colors.red,
+    //       duration: const Duration(seconds: 1)));
+    //   return;
+    // }
     WinBle.startScanning();
     setState(() {
       isScanning = true;
@@ -75,6 +91,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     scanStream?.cancel();
     connectionStream?.cancel();
+    bleStateStream?.cancel();
     super.dispose();
   }
 
@@ -84,6 +101,10 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text("Win BLe"),
           centerTitle: true,
+          actions: [
+            kButton(
+                "Ble Status : ${bleState.toString().split('.').last}", () {}),
+          ],
         ),
         body: SizedBox(
           child: Column(

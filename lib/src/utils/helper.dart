@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:win_ble/src/win_ble.dart';
 
 List<int> createUInt32LE(
   int value,
@@ -43,4 +44,19 @@ String toWindowsUuid(String uuid) {
 String fromWindowsUuid(String uuid) {
   var p0 = uuid.replaceAll("{", "");
   return p0.replaceAll("}", "");
+}
+
+BleState bleStateFromResponse(String state) {
+  switch (state.toLowerCase()) {
+    case "on":
+      return BleState.On;
+    case "off":
+      return BleState.Off;
+    case "disabled":
+      return BleState.Disabled;
+    case "unsupported":
+      return BleState.Unsupported;
+    default:
+      return BleState.Unknown;
+  }
 }

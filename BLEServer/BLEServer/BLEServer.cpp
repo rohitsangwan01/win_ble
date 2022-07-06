@@ -26,8 +26,11 @@
 #include <io.h>  
 
 using namespace Platform;
+using namespace Windows::Foundation::Collections;
 using namespace Windows::Devices;
+using namespace Windows::Devices::Radios;
 using namespace Windows::Data::Json;
+using namespace concurrency;
 
 Bluetooth::Advertisement::BluetoothLEAdvertisementWatcher^ bleAdvertisementWatcher;
 auto devices = ref new Collections::Map<String^, Bluetooth::BluetoothLEDevice^>();
@@ -596,6 +599,37 @@ int main(Array<String^>^ args) {
 		// TODO manfuacturer data / flags / data sections ?
 		writeObject(msg);
 	});
+
+	// Added the ability to track the BLE Radio State
+	auto getRadiosOperation = Radio::GetRadiosAsync();
+	create_task(getRadiosOperation).then(
+		[](task<IVectorView<Radio^>^> asyncInfo)
+		{
+			auto radios = asyncInfo.get();
+			boolean haveBleRadio = false;
+			for (Windows::Devices::Radios::Radio^ radio : radios)
+			{
+				if (radio->Kind == RadioKind::Bluetooth)
+				{
+					haveBleRadio = true;
+					JsonObject^ msg = ref new JsonObject();
+					msg->Insert("_type", JsonValue::CreateStringValue("ble_state"));
+					msg->Insert("state", JsonValue::CreateStringValue(radio->State.ToString()));
+					writeObject(msg);
+					radio->StateChanged += ref new Windows::Foundation::TypedEventHandler<Windows::Devices::Radios::Radio^, Platform::Object^>(
+						[](Windows::Devices::Radios::Radio^ sender, Platform::Object^ args)
+						{
+							JsonObject^ msg = ref new JsonObject();
+							msg->Insert("_type", JsonValue::CreateStringValue("ble_state"));
+							msg->Insert("state", JsonValue::CreateStringValue(sender->State.ToString()));
+							writeObject(msg);
+							
+						}
+					);
+				}
+			}
+		}
+	);
 
 	JsonObject^ msg = ref new JsonObject();
 	msg->Insert("_type", JsonValue::CreateStringValue("Start"));

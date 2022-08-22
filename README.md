@@ -1,5 +1,7 @@
 # WinBle
 
+[![win_ble version](https://img.shields.io/pub/v/win_ble?label=win_ble)](https://pub.dev/packages/win_ble)
+
 WinBle Plugin to use Bluetooth Low Energy in Flutter Windows
 
 ## Getting Started

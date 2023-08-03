@@ -15,16 +15,39 @@ List<int> createUInt32LE(
   return result;
 }
 
-dataParser(event) {
-  try {
-    var data = String.fromCharCodes(event);
-    String finalData =
-        data.substring(data.indexOf("{"), data.lastIndexOf("}") + 1);
-    var jsonData = json.decode(finalData);
-    return jsonData;
-  } catch (e) {
-    return null;
+int fromBytesToInt32(int b3, int b2, int b1, int b0) {
+  final int8List = new Int8List(4)
+    ..[3] = b3
+    ..[2] = b2
+    ..[1] = b1
+    ..[0] = b0;
+  return int8List.buffer.asByteData().getInt32(0);
+}
+
+List<dynamic> dataParser(event) {
+  var data = String.fromCharCodes(event);
+  List<dynamic> list = [];
+  var cursor = 0;
+  while (cursor < data.length) {
+    var length = fromBytesToInt32(
+      event[cursor + 0],
+      event[cursor + 1],
+      event[cursor + 2],
+      event[cursor + 3]
+    );
+    cursor += 4;
+
+    String payload = data.substring(cursor, cursor + length);
+    cursor += length;
+    
+    var jsonData = json.decode(payload);
+    list.add(jsonData);
   }
+  if (cursor != data.length) {
+    return [];
+  }
+
+  return list;
 }
 
 Future<File> getFilePath(String path) async {

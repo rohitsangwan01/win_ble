@@ -1,4 +1,4 @@
-import '../utils/helper.dart';
+import '../utils/win_helper.dart';
 
 class BleCharacteristic {
   BleCharacteristic({
@@ -11,7 +11,7 @@ class BleCharacteristic {
 
   factory BleCharacteristic.fromJson(Map<String, dynamic> json) =>
       BleCharacteristic(
-        uuid: fromWindowsUuid(json["uuid"]),
+        uuid: WinHelper.fromWindowsUuid(json["uuid"]),
         properties: json["properties"] != null
             ? Properties.fromJson(json["properties"])
             : Properties(),

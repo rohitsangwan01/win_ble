@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:win_ble/win_ble.dart';
+import 'package:win_ble/win_file.dart';
 import 'package:win_ble_example/device_info.dart';
 
 void main() {
@@ -24,9 +25,16 @@ class _MyAppState extends State<MyApp> {
   bool isScanning = false;
   BleState bleState = BleState.Unknown;
 
+  void initialize() async {
+    await WinBle.initialize(
+      serverPath: await WinServer.path,
+      enableLog: true,
+    );
+  }
+
   @override
   void initState() {
-    WinBle.initialize(enableLog: true);
+    initialize();
     // call winBLe.dispose() when done
     connectionStream = WinBle.connectionStream.listen((event) {
       print("Connection Event : " + event.toString());
@@ -35,17 +43,7 @@ class _MyAppState extends State<MyApp> {
     // Listen to Scan Stream , we can cancel in onDispose()
     scanStream = WinBle.scanStream.listen((event) {
       setState(() {
-        final index =
-            devices.indexWhere((element) => element.address == event.address);
-        // Updating existing device
-        if (index != -1) {
-          final name = devices[index].name;
-          devices[index] = event;
-          // Putting back cached name
-          if (event.name.isEmpty || event.name == 'N/A') {
-            devices[index].name = name;
-          }
-        } else {
+        if (!devices.any((element) => element.address == event.address)) {
           devices.add(event);
         }
       });
@@ -158,13 +156,12 @@ class _MyAppState extends State<MyApp> {
                             },
                             child: Card(
                               child: ListTile(
-                                  leading: Text(device.name.isEmpty
-                                      ? "N/A"
-                                      : device.name),
-                                  title: Text(device.address),
+                                  title: Text(
+                                    "${device.name.isEmpty ? "N/A" : device.name} ( ${device.address} )",
+                                  ),
                                   // trailing: Text(device.manufacturerData.toString()),
                                   subtitle: Text(
-                                      "rssi : ${device.rssi} | AdvTpe : ${device.advType}")),
+                                      "Rssi : ${device.rssi} | AdvTpe : ${device.advType}")),
                             ),
                           );
                         },

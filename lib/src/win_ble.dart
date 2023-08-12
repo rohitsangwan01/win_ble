@@ -53,8 +53,8 @@ class WinBle {
       _bleServer = await Process.start(bleFile.path, []);
 
       _stdoutSubscription = _bleServer.stdout.listen((event) {
-        var data = dataParser(event);
-        if (data != null) {
+        var listData = dataParser(event);
+        for (var data in listData) {
           _printLog(data);
           _processMessage(data);
         }

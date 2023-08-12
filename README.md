@@ -2,68 +2,27 @@
 
 [![win_ble version](https://img.shields.io/pub/v/win_ble?label=win_ble)](https://pub.dev/packages/win_ble)
 
-WinBle Plugin to use Bluetooth Low Energy in Flutter Windows
-
-## Getting Started
-
-add this package to pubspec.yaml file
-
-```dart
-win_ble: ^0.0.4
-```
-
-requires Windows version >= 10.0.15014
-
-Make Sure to Add this code in your project's =>
-
-`/windows/runner/main.cpp` file , otherwise Windows Console will open on running Application
-
-```c++
-if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()){
-CreateAndAttachConsole();
-}
-// Add this Code
-// <------- From Here --------- >
-else{
-    STARTUPINFO si = {0};
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;
-
-    PROCESS_INFORMATION pi = {0};
-    WCHAR lpszCmd[MAX_PATH] = L"cmd.exe";
-    if (::CreateProcess(NULL, lpszCmd, NULL, NULL, FALSE, CREATE_NEW_CONSOLE | CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
-    {
-      do
-      {
-        if (::AttachConsole(pi.dwProcessId))
-        {
-          ::TerminateProcess(pi.hProcess, 0);
-          break;
-        }
-      } while (ERROR_INVALID_HANDLE == GetLastError());
-      ::CloseHandle(pi.hProcess);
-      ::CloseHandle(pi.hThread);
-    }
-}
-// <------- UpTo Here --------- >
-```
+Use the WinBle plugin to enable Bluetooth Low Energy in Flutter Windows and pure Dart projects (Windows only)
 
 ## Usage
 
-First initialize WinBle by Calling this Method
+First initialize WinBle, to initialize on Flutter Windows, get server path using `await WinServer.path`, and for pure dart projects ( Windows only ) Download [BleServer.exe](https://github.com/rohitsangwan01/win_ble/blob/main/lib/assets/BLEServer.exe) file and place in the same folder, checkout `example_dart` for more details
 
 ```dart
- WinBle.initialize();
+  // To initialize on Flutter Windows
+  await WinBle.initialize(serverPath: await WinServer.path);
+
+  // For pure dart projects
+  await WinBle.initialize(serverPath: "Path of BLEServer.exe file");
 ```
 
-Dispose WinBle after using , by Calling
+Dispose WinBle after using
 
 ```dart
  WinBle.dispose();
 ```
 
-To Get Bluetooth Status , Call
+To Get Bluetooth Status
 
 ```dart
   WinBle.bleState.listen((BleState state) {
@@ -72,7 +31,7 @@ To Get Bluetooth Status , Call
 ```
 
 
-To Start Scan , Call
+To Start Scan
 
 ```dart
  WinBle.startScanning();
@@ -81,7 +40,7 @@ To Start Scan , Call
  });
 ```
 
-To Stop Scan , Call
+To Stop Scan
 
 ```dart
   WinBle.stopScanning();
@@ -89,17 +48,18 @@ To Stop Scan , Call
 ```
 
 To Connect 
-```dart
-// To Connect
-  await WinBle.connect(address);
 
-// Get Connection Updates Here
-  StreamSubscription  _connectionStream =
-        WinBle.connectionStreamOf(device.address).listen((event) {
-      // event will be a boolean , in which
-      // true => Connected
-      // false => Disconnected
-    });
+```dart
+ // To Connect
+ await WinBle.connect(address);
+
+ // Get Connection Updates Here
+ StreamSubscription  _connectionStream =
+    WinBle.connectionStreamOf(device.address).listen((event) {
+    // event will be a boolean , in which
+    // true => Connected
+    // false => Disconnected
+ });
 ```
 
 To Disconnect
@@ -142,11 +102,49 @@ Rest All Methods are
   await WinBle.unSubscribeFromCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
 // Get Characteristic Value Updates Here
-   StreamSubscription _characteristicValueStream =
-        WinBle.characteristicValueStream.listen((event) {
+   StreamSubscription _characteristicValueStream = WinBle.characteristicValueStream.listen((event) {
      // Here We will Receive All Characteristic Events
-    });
+   });
 
+```
+
+## Note
+
+Requires Windows version >= 10.0.15014
+
+Make Sure to Add this code in your project's =>
+
+`/windows/runner/main.cpp` file , otherwise Windows Console will open on running Application
+
+```c++
+if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()){
+CreateAndAttachConsole();
+}
+// Add this Code
+// <------- From Here --------- >
+else{
+    STARTUPINFO si = {0};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+
+    PROCESS_INFORMATION pi = {0};
+    WCHAR lpszCmd[MAX_PATH] = L"cmd.exe";
+    if (::CreateProcess(NULL, lpszCmd, NULL, NULL, FALSE, CREATE_NEW_CONSOLE | CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+    {
+      do
+      {
+        if (::AttachConsole(pi.dwProcessId))
+        {
+          ::TerminateProcess(pi.hProcess, 0);
+          break;
+        }
+      } while (ERROR_INVALID_HANDLE == GetLastError());
+      ::CloseHandle(pi.hProcess);
+      ::CloseHandle(pi.hThread);
+    }
+}
+// <------- UpTo Here --------- >
 ```
 
 ## Additional information

@@ -1,8 +1,9 @@
 name: win_ble
-description: WinBle Plugin to use Bluetooth Low Energy in Flutter Windows Desktop
+description: Use the WinBle plugin to enable Bluetooth Low Energy in Flutter Windows and pure Dart projects (Windows only)
 version: 1.0.0
-homepage: https://github.com/rohitsangwan01/win_ble.git
-repository: https://github.com/rohitsangwan01/win_ble.git
+homepage: https://github.com/rohitsangwan01/win_ble
+repository: https://github.com/rohitsangwan01/win_ble
+issue_tracker: https://github.com/rohitsangwan01/win_ble/issues
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

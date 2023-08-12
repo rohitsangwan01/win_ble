@@ -7,14 +7,13 @@ void main() async {
   String serverPath = "..\\lib\\assets\\BLEServer.exe";
 
   await WinBle.initialize(enableLog: false, serverPath: serverPath);
+  print("WinBle initialized");
 
   WinBle.bleState.listen((event) {
     print("Ble state: $event");
   });
 
   List<BleDevice> devices = [];
-
-  print("WinBle initialized");
   WinBle.scanStream.listen((device) {
     if (devices.any((element) =>
         element.address == device.address && element.name == device.name)) {

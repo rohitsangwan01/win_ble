@@ -1,3 +1,10 @@
+## 1.0.0
+
+- Added support for pure dart (Windows only)
+- Fix: few events were missing
+- BreakingChange: Initialize method now requires BleServer.exe path
+- Improved apis and minor fixes
+
 ## 0.0.5
 
 - Added BleState , to get status of Bluetooth Radio

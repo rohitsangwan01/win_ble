@@ -5,7 +5,8 @@ import 'package:win32/win32.dart';
 import 'package:flutter/services.dart';
 
 class WinServer {
-  /// Get path of BleServer from library assets
+  /// Get path of BleServer from library assets,
+  ///  use this class in Flutter projects only, this class is not supported in pure Dart projects.
   static Future<String> get path async {
     String bleServerExe = "packages/win_ble/assets/BLEServer.exe";
     File file = await _getFilePath(bleServerExe);

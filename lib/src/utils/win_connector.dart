@@ -3,23 +3,22 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-
 /// A class that connects to the BLE server and sends/receives messages
 /// Make sure to call [initialize] before using [invokeMethod]
 class WinConnector {
   int _requestId = 0;
   StreamSubscription? _stdoutSubscription;
   StreamSubscription? _stderrSubscription;
-  late Process _bleServer;
+  Process? _bleServer;
   final _responseStreamController = StreamController.broadcast();
 
-  Future<void> initialize({Function(dynamic)? onData}) async {
-    String bleServerExe = "packages/win_ble/assets/BLEServer.exe";
-    File bleFile = await _getFilePath(bleServerExe);
+  Future<void> initialize({
+    Function(dynamic)? onData,
+    required String serverPath,
+  }) async {
+    File bleFile = File(serverPath);
     _bleServer = await Process.start(bleFile.path, []);
-    _stdoutSubscription = _bleServer.stdout.listen((event) {
+    _stdoutSubscription = _bleServer?.stdout.listen((event) {
       var listData = _dataParser(event);
       for (var data in listData) {
         _handleResponse(data);
@@ -27,7 +26,7 @@ class WinConnector {
       }
     });
 
-    _stderrSubscription = _bleServer.stderr.listen((event) {
+    _stderrSubscription = _bleServer?.stderr.listen((event) {
       throw String.fromCharCodes(event);
     });
   }
@@ -57,7 +56,7 @@ class WinConnector {
   void dispose() {
     _stderrSubscription?.cancel();
     _stdoutSubscription?.cancel();
-    _bleServer.kill();
+    _bleServer?.kill();
   }
 
   void _handleResponse(response) {
@@ -81,8 +80,8 @@ class WinConnector {
     String data = json.encode(result);
     List<int> dataBufInt = utf8.encode(data);
     List<int> lenBufInt = _createUInt32LE(dataBufInt.length);
-    _bleServer.stdin.add(lenBufInt);
-    _bleServer.stdin.add(dataBufInt);
+    _bleServer?.stdin.add(lenBufInt);
+    _bleServer?.stdin.add(dataBufInt);
   }
 
   List<int> _createUInt32LE(int value) {
@@ -91,16 +90,6 @@ class WinConnector {
       result[i] = value & 0xFF;
     }
     return result;
-  }
-
-  Future<File> _getFilePath(String path) async {
-    final byteData = await rootBundle.load(path);
-    final buffer = byteData.buffer;
-    Directory tempDir = await getTemporaryDirectory();
-    String tempPath = tempDir.path;
-    var filePath = tempPath + '/file_01.tmp';
-    return File(filePath).writeAsBytes(
-        buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
   }
 
   List<dynamic> _dataParser(event) {

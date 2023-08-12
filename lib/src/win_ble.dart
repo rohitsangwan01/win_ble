@@ -26,11 +26,17 @@ class WinBle {
 
   /// make sure to [initialize] WinBle once before using it
   /// call [dispose] when Done
-  static initialize({bool enableLog = false}) async {
+  static Future<void> initialize({
+    required String serverPath,
+    bool enableLog = false,
+  }) async {
     if (_isInitialized) throw "WinBle is already initialized";
     try {
       WinHelper.showLog = enableLog;
-      await _channel.initialize(onData: _handleMessages);
+      await _channel.initialize(
+        onData: _handleMessages,
+        serverPath: serverPath,
+      );
       _isInitialized = true;
     } catch (e) {
       dispose();

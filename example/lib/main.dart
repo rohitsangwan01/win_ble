@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:win_ble/win_ble.dart';
+import 'package:win_ble/win_file.dart';
 import 'package:win_ble_example/device_info.dart';
 
 void main() {
@@ -24,9 +25,16 @@ class _MyAppState extends State<MyApp> {
   bool isScanning = false;
   BleState bleState = BleState.Unknown;
 
+  void initialize() async {
+    await WinBle.initialize(
+      serverPath: await WinServer.path,
+      enableLog: true,
+    );
+  }
+
   @override
   void initState() {
-    WinBle.initialize(enableLog: true);
+    initialize();
     // call winBLe.dispose() when done
     connectionStream = WinBle.connectionStream.listen((event) {
       print("Connection Event : " + event.toString());

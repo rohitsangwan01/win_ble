@@ -249,12 +249,30 @@ class _DeviceInfoState extends State<DeviceInfo> {
               height: 10,
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 kButton("Connect", () {
                   connect(device.address);
                 }),
+                kButton("Disconnect", () {
+                  disconnect(device.address);
+                }),
+                kButton("Discover Services", () {
+                  discoverServices(device.address);
+                }, enabled: connected),
+                kButton("Get MaxMtuSize", () {
+                  WinBle.getMaxMtuSize(device.address).then((value) {
+                    showNotification("MaxMtuSize : $value");
+                  });
+                }, enabled: connected),
+              ],
+            ),
+            const Divider(),
+            Row(
+              // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                 kButton("canPair", () {
                   canPair(device.address);
                 }, enabled: connected),
@@ -267,12 +285,6 @@ class _DeviceInfoState extends State<DeviceInfo> {
                 kButton("UnPair", () {
                   unPair(device.address);
                 }, enabled: connected),
-                kButton("Discover Services", () {
-                  discoverServices(device.address);
-                }, enabled: connected),
-                kButton("Disconnect", () {
-                  disconnect(device.address);
-                }),
               ],
             ),
             // Service List
@@ -395,11 +407,14 @@ class _DeviceInfoState extends State<DeviceInfo> {
   }
 
   kButton(String txt, onTap, {bool enabled = true}) {
-    return ElevatedButton(
-      onPressed: enabled ? onTap : null,
-      child: Text(
-        txt,
-        style: const TextStyle(fontSize: 20),
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: ElevatedButton(
+        onPressed: enabled ? onTap : null,
+        child: Text(
+          txt,
+          style: const TextStyle(fontSize: 20),
+        ),
       ),
     );
   }

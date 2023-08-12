@@ -22,19 +22,11 @@ Dispose WinBle after using
  WinBle.dispose();
 ```
 
-To Get Bluetooth Status
-
-```dart
-  WinBle.bleState.listen((BleState state) {
-    // Get BleState (On, Off, Unknown, Disabled, Unsupported)
-  });
-```
-
-
 To Start Scan
 
 ```dart
  WinBle.startScanning();
+
  StreamSubscription? scanStream = WinBle.scanStream.listen((event) {
   // Get Devices Here
  });
@@ -44,10 +36,11 @@ To Stop Scan
 
 ```dart
   WinBle.stopScanning();
+
   scanStream?.cancel();
 ```
 
-To Connect 
+To Connect
 
 ```dart
  // To Connect
@@ -63,11 +56,37 @@ To Connect
 ```
 
 To Disconnect
+
 ```dart
   await WinBle.disconnect(address);
 ```
 
+To get MaxMtuSize
+
+```dart
+  await WinBle.getMaxMtuSize(address);
+```
+
+Handle Bluetooth radio
+
+```dart
+  // To get rdaio status
+  WinBle.getBluetoothState();
+
+  // To get updates of radio state
+  WinBle.bleState.listen((BleState state) {
+    // Get BleState (On, Off, Unknown, Disabled, Unsupported)
+  });
+
+  // To turn on radio
+  WinBle.updateBluetoothState(true);
+
+  // To turn off radio
+  WinBle.updateBluetoothState(false);
+```
+
 Pairing Options
+
 ```dart
   // To Pair
   await WinBle.pair(address);
@@ -81,27 +100,29 @@ Pairing Options
   // To Check if Device is Already Paired
   bool isPaired = await WinBle.isPaired(address);
 ```
+
 Rest All Methods are
+
 ```dart
-// To Get Services
+  // To Get Services
   var services = await WinBle.discoverServices(address);
 
-// To Get Characteristic
+  // To Get Characteristic
   List<BleCharacteristic> bleCharacteristics = await WinBle.discoverCharacteristics(address: address, serviceId: serviceID);
 
-// To Read Characteristic
+  // To Read Characteristic
   List<int> data = await WinBle.read(address: address, serviceId: serviceID, characteristicId: charID);
 
-// To Write Characteristic
+  // To Write Characteristic
   await WinBle.write( address: address, service: serviceID,  characteristic: charID,  data: data, writeWithResponse: writeWithResponse);
 
-// To Start Subscription
+  // To Start Subscription
   await WinBle.subscribeToCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
-// To Stop Subscription
+  // To Stop Subscription
   await WinBle.unSubscribeFromCharacteristic(address: address, serviceId: serviceID, characteristicId: charID);
 
-// Get Characteristic Value Updates Here
+  // Get Characteristic Value Updates Here
    StreamSubscription _characteristicValueStream = WinBle.characteristicValueStream.listen((event) {
      // Here We will Receive All Characteristic Events
    });
@@ -148,6 +169,7 @@ else{
 ```
 
 ## Additional information
+
 Thanks to [noble-winrt](https://github.com/urish/noble-winrt) for initial BleServer Code
 
 This is Just The Initial Version feel free to Contribute or Report any Bug!

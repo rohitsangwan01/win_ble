@@ -94,6 +94,36 @@ class WinBle {
     }
   }
 
+  /// To get ble radio state
+  static Future<BleState> getBluetoothState() async {
+    try {
+      var state = await _channel.invokeMethod("radioState");
+      return BleState.parse(state);
+    } catch (e) {
+      return BleState.Unknown;
+    }
+  }
+
+  /// To turn on/off ble radio
+  static Future<BleState> updateBluetoothState(bool turnOn) async {
+    try {
+      var state = await _channel.invokeMethod("changeRadioState", args: {
+        "turnOn": turnOn,
+      });
+      return BleState.parse(state);
+    } catch (e) {
+      return BleState.Unknown;
+    }
+  }
+
+  /// To get max MtuSize
+  static Future getMaxMtuSize(String address) async {
+    var size = await _channel.invokeMethod("getMaxMtuSize", args: {
+      "device": WinHelper.getDeviceFromAddress(address),
+    });
+    return size;
+  }
+
   /// To [Start Scanning ]
   static void startScanning() {
     _channel.invokeMethod("scan", waitForResult: false);

@@ -43,7 +43,17 @@ class _MyAppState extends State<MyApp> {
     // Listen to Scan Stream , we can cancel in onDispose()
     scanStream = WinBle.scanStream.listen((event) {
       setState(() {
-        if (!devices.any((element) => element.address == event.address)) {
+        final index =
+            devices.indexWhere((element) => element.address == event.address);
+        // Updating existing device
+        if (index != -1) {
+          final name = devices[index].name;
+          devices[index] = event;
+          // Putting back cached name
+          if (event.name.isEmpty || event.name == 'N/A') {
+            devices[index].name = name;
+          }
+        } else {
           devices.add(event);
         }
       });
@@ -125,11 +135,21 @@ class _MyAppState extends State<MyApp> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  kButton("Start", () {
+                  kButton("Start Scan", () {
                     startScanning();
                   }),
-                  kButton("Stop", () {
+                  kButton("Stop Scan", () {
                     stopScanning();
+                  }),
+                  kButton(
+                      bleState == BleState.On
+                          ? "Turn off Bluetooth"
+                          : "Turn on Bluetooth", () {
+                    if (bleState == BleState.On) {
+                      WinBle.updateBluetoothState(false);
+                    } else {
+                      WinBle.updateBluetoothState(true);
+                    }
                   }),
                 ],
               ),

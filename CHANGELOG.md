@@ -1,3 +1,8 @@
+## 1.0.1
+
+- Added Bluetooth radio related Api : turn on/off programatically
+- Added api to get maxMtuSize
+
 ## 1.0.0
 
 - Added support for pure dart (Windows only)

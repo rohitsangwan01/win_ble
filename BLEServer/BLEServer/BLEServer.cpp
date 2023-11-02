@@ -252,11 +252,25 @@ concurrency::task<Bluetooth::GenericAttributeProfile::GattDeviceServicesResult ^
 	Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
 	if (command->HasKey("service"))
 	{
-		return co_await device->GetGattServicesForUuidAsync(parseUuid(command->GetNamedString("service")));
+		if (command->GetNamedBoolean("forceRefresh", false))
+		{
+			return co_await device->GetGattServicesForUuidAsync(parseUuid(command->GetNamedString("service")), Bluetooth::BluetoothCacheMode::Uncached);
+		}
+		else 
+		{
+			co_return co_await device->GetGattServicesForUuidAsync(parseUuid(command->GetNamedString("service")));
+		}
 	}
 	else
 	{
-		co_return co_await device->GetGattServicesAsync();
+		if (command->GetNamedBoolean("forceRefresh", false))
+		{
+			co_return co_await device->GetGattServicesAsync(Bluetooth::BluetoothCacheMode::Uncached);
+		}
+		else
+		{
+			co_return co_await device->GetGattServicesAsync();
+		}
 	}
 }
 
@@ -287,7 +301,11 @@ String ^ characteristicKey(String ^ device, String ^ service, String ^ character
 		throw ref new FailureException(ref new String(L"Requested service not found"));
 	}
 	auto service = services->GetAt(0);
-	auto results = co_await service->GetCharacteristicsAsync();
+
+	bool forceRefresh = command->GetNamedBoolean("forceRefresh", false);
+	
+
+	auto results = forceRefresh ? co_await service->GetCharacteristicsAsync(Bluetooth::BluetoothCacheMode::Uncached) : co_await service->GetCharacteristicsAsync();
 	for (unsigned int i = 0; i < results->Characteristics->Size; i++)
 	{
 		auto characteristic = results->Characteristics->GetAt(i);

@@ -2,9 +2,10 @@
 
 import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:win_ble/src/models/ble_state.dart';
-import 'package:win_ble/src/utils/win_helper.dart';
 import 'package:win_ble/src/utils/win_connector.dart';
+import 'package:win_ble/src/utils/win_helper.dart';
 
 import 'models/ble_characteristic.dart';
 import 'models/ble_device.dart';
@@ -232,19 +233,24 @@ class WinBle {
   }
 
   /// [discoverServices] will return a list of services List
-  static Future<List<String>> discoverServices(address) async {
+  static Future<List<String>> discoverServices(address,
+      {bool forceRefresh = false}) async {
     List? services = await _channel.invokeMethod("services", args: {
       "device": WinHelper.getDeviceFromAddress(address),
+      "forceRefresh": forceRefresh,
     });
     return services?.map((e) => WinHelper.fromWindowsUuid(e)).toList() ?? [];
   }
 
   /// [discoverCharacteristics] will return a list of [BleCharacteristic]
   static Future<List<BleCharacteristic>> discoverCharacteristics(
-      {required String address, required String serviceId}) async {
+      {required String address,
+      required String serviceId,
+      bool forceRefresh = false}) async {
     var data = await _channel.invokeMethod("characteristics", args: {
       "device": WinHelper.getDeviceFromAddress(address),
       "service": WinHelper.toWindowsUuid(serviceId),
+      "forceRefresh": forceRefresh,
     });
     return List<BleCharacteristic>.from(
         data.map((e) => BleCharacteristic.fromJson(e)));

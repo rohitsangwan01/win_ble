@@ -18,9 +18,26 @@ class WinServer {
     final buffer = byteData.buffer;
     String? tempPath = await _getTemporaryPath();
     if (tempPath == null) throw Exception("Could not get temporary path");
-    var filePath = tempPath + '/file_01.tmp';
-    return File(filePath).writeAsBytes(
-        buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+    var initPath = tempPath + '/file_01.tmp';
+    var filePath = initPath;
+
+    //Prevent multiple applications and file being occupied, max 10
+    for (int i = 1; i < 10; i++) {
+      var file = File(filePath);
+      if (file.existsSync()) {
+        try {
+          file.deleteSync();
+        } catch (e) {
+          filePath = "$initPath$i";
+          continue;
+        }
+        break;
+      } else {
+        break;
+      }
+    }
+
+    return File(filePath).writeAsBytes(buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
   }
 
   static Future<String?> _getTemporaryPath() async {

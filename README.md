@@ -133,9 +133,10 @@ Rest All Methods are
 
 Requires Windows version >= 10.0.15014
 
-Make Sure to Add this code in your project's =>
-
-`/windows/runner/main.cpp` file , otherwise Windows Console will open on running Application
+<details>
+  <summary>If windows release build opens cmd while running app, try this</summary>
+  
+Edit your `/windows/runner/main.cpp` file, this is a known flutter [issue](https://github.com/flutter/flutter/issues/47891)
 
 ```c++
 if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()){
@@ -167,6 +168,8 @@ else{
 }
 // <------- UpTo Here --------- >
 ```
+
+</details>
 
 ## Additional information
 

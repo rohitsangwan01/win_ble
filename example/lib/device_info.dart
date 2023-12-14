@@ -48,7 +48,6 @@ class _DeviceInfoState extends State<DeviceInfo> {
   connect(String address) async {
     try {
       await WinBle.connect(address);
-      showSuccess("Connected");
     } catch (e) {
       setState(() {
         error = e.toString();
@@ -203,6 +202,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
       setState(() {
         connected = event;
       });
+      showSuccess("Connected : $event");
     });
 
     _characteristicValueStream =

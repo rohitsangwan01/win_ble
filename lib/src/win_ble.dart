@@ -145,7 +145,7 @@ class WinBle {
       });
       WinHelper.deviceMap[address] = result;
       // we have to perform an operation on device in order to make a connection
-      var services = await discoverServices(address);
+      var services = await discoverServices(address, forceRefresh: true);
       // A temporary way of detecting connection : if services are empty then connection is failed
       bool connectionFailed = services.isEmpty;
       _connectionStreamController.add({

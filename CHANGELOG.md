@@ -1,3 +1,8 @@
+## 1.0.2
+
+- Add parameter to discover uncached services [#29](https://github.com/rohitsangwan01/win_ble/pull/29)
+- Prevent multiple creations of win_ble_server.exe files [#32](https://github.com/rohitsangwan01/win_ble/pull/32)
+
 ## 1.0.1
 
 - Added Bluetooth radio related Api : turn on/off programatically

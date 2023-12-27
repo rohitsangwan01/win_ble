@@ -3,8 +3,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:win_ble/win_ble.dart';
-import 'package:win_ble/win_file.dart';
+import 'package:win_ble_plus/win_ble.dart';
+import 'package:win_ble_plus/win_file.dart';
 import 'package:win_ble_example/device_info.dart';
 
 void main() {

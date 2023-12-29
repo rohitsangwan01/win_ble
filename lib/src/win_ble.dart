@@ -95,6 +95,15 @@ class WinBle {
     }
   }
 
+  /// To get ble server version
+  static Future<String> version() async {
+    try {
+      return await _channel.invokeMethod("version");
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
   /// To get ble radio state
   static Future<BleState> getBluetoothState() async {
     try {
@@ -191,10 +200,17 @@ class WinBle {
   }
 
   /// [isPaired] will return a boolean
-  static Future<bool> isPaired(String address) async {
+  /// [forceRefresh] will get the latest pair status of this device
+  static Future<bool> isPaired(
+    String address, {
+    bool forceRefresh = false,
+  }) async {
     try {
       var result = await _channel.invokeMethod("isPaired", args: {
-        "device": WinHelper.getDeviceFromAddress(address),
+        "device": forceRefresh
+            ? address.replaceAll(":", "")
+            : WinHelper.getDeviceFromAddress(address),
+        "forceRefresh": forceRefresh,
       });
       return result != null && result;
     } catch (e) {

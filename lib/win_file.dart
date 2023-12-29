@@ -7,18 +7,19 @@ import 'package:flutter/services.dart';
 class WinServer {
   /// Get path of BleServer from library assets,
   ///  use this class in Flutter projects only, this class is not supported in pure Dart projects.
-  static Future<String> get path async {
+  /// use [fileName] to avoid conflicts of using same file in different projects
+  static Future<String> path({String? fileName}) async {
     String bleServerExe = "packages/win_ble/assets/BLEServer.exe";
-    File file = await _getFilePath(bleServerExe);
+    File file = await _getFilePath(bleServerExe, fileName);
     return file.path;
   }
 
-  static Future<File> _getFilePath(String path) async {
+  static Future<File> _getFilePath(String path, String? fileName) async {
     final byteData = await rootBundle.load(path);
     final buffer = byteData.buffer;
     String? tempPath = await _getTemporaryPath();
     if (tempPath == null) throw Exception("Could not get temporary path");
-    var initPath = tempPath + '/win_ble_server.exe';
+    var initPath = '$tempPath/${fileName ?? 'win_ble_server'}.exe';
     var filePath = initPath;
 
     //Prevent multiple applications and file being occupied, max 10

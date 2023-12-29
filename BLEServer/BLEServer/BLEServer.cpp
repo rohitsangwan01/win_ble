@@ -130,12 +130,20 @@ auto CustomOnPairingRequested = ref new Windows::Foundation::TypedEventHandler<E
 concurrency::task<IJsonValue ^> pairRequest(JsonObject ^ command)
 {
 	String ^ deviceId = command->GetNamedString("device", "");
-
-	if (!devices->HasKey(deviceId))
+	bool forceRefresh = command->GetNamedBoolean("forceRefresh", false);
+	Bluetooth::BluetoothLEDevice^ device;
+	if (forceRefresh || !devices->HasKey(deviceId))
 	{
+		String^ addressStr = command->GetNamedString("address", "");
+		unsigned long long address = std::stoull(addressStr->Data(), 0, 16);
+		device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+	}
+	else if (devices->HasKey(deviceId)) {
+		device = devices->Lookup(deviceId);
+	}
+	else {
 		throw ref new FailureException(ref new String(L"Device not found"));
 	}
-	Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
 
 	Windows::Foundation::EventRegistrationToken cookie = device->DeviceInformation->Pairing->Custom->PairingRequested += CustomOnPairingRequested;
 

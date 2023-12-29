@@ -221,10 +221,12 @@ class WinBle {
   /// [pair] will send a pairing command
   /// it will be completed on Successful Pairing
   /// or it will throw Error on Unsuccessful Pairing
-  static Future<void> pair(String address) async {
+  static Future<void> pair(String address, {bool forceRefresh = false}) async {
     try {
       var result = await _channel.invokeMethod("pair", args: {
         "device": WinHelper.getDeviceFromAddress(address),
+        "address": address.replaceAll(":", ""),
+        "forceRefresh": forceRefresh,
       });
       if (result == null || result != "Paired") {
         throw result;

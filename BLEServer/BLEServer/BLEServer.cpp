@@ -565,7 +565,7 @@ concurrency::task<void> processCommand(JsonObject ^ command)
 		if (cmd->Equals("version"))
 		{
 			// Make sure to increment this version on each change
-			result = JsonValue::CreateStringValue("1.0.0");
+			result = JsonValue::CreateStringValue("1.0.1");
 		}
 		if (cmd->Equals("ping"))
 		{

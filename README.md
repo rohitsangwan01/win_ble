@@ -10,7 +10,7 @@ First initialize WinBle, to initialize on Flutter Windows, get server path using
 
 ```dart
   // To initialize on Flutter Windows
-  await WinBle.initialize(serverPath: await WinServer.path);
+  await WinBle.initialize(serverPath: await WinServer.path());
 
   // For pure dart projects
   await WinBle.initialize(serverPath: "Path of BLEServer.exe file");

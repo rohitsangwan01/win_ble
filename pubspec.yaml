@@ -1,6 +1,6 @@
 name: win_ble_plus
 description: Use the WinBle plugin to enable Bluetooth Low Energy in Flutter Windows and pure Dart projects (Windows only)
-version: 1.0.4
+version: 1.1.0
 #homepage: https://github.com/rohitsangwan01/win_ble
 #repository: https://github.com/rohitsangwan01/win_ble
 #issue_tracker: https://github.com/rohitsangwan01/win_ble/issues
@@ -14,7 +14,7 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  path_provider: ^2.1.1
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:

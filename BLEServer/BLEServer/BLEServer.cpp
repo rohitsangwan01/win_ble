@@ -263,7 +263,7 @@ concurrency::task<Bluetooth::GenericAttributeProfile::GattDeviceServicesResult ^
 		{
 			return co_await device->GetGattServicesForUuidAsync(parseUuid(command->GetNamedString("service")), Bluetooth::BluetoothCacheMode::Uncached);
 		}
-		else 
+		else
 		{
 			co_return co_await device->GetGattServicesForUuidAsync(parseUuid(command->GetNamedString("service")));
 		}
@@ -310,7 +310,6 @@ String ^ characteristicKey(String ^ device, String ^ service, String ^ character
 	auto service = services->GetAt(0);
 
 	bool forceRefresh = command->GetNamedBoolean("forceRefresh", false);
-	
 
 	auto results = forceRefresh ? co_await service->GetCharacteristicsAsync(Bluetooth::BluetoothCacheMode::Uncached) : co_await service->GetCharacteristicsAsync();
 	for (unsigned int i = 0; i < results->Characteristics->Size; i++)
@@ -533,19 +532,18 @@ concurrency::task<IJsonValue ^> changeRadioState(JsonObject ^ command)
 	co_return JsonValue::CreateNullValue();
 }
 
-concurrency::task<IJsonValue^> getMaxMtuSize(JsonObject^ command)
+concurrency::task<IJsonValue ^> getMaxMtuSize(JsonObject ^ command)
 {
-	String^ deviceId = command->GetNamedString("device", "");
+	String ^ deviceId = command->GetNamedString("device", "");
 	if (!devices->HasKey(deviceId))
 	{
 		throw ref new FailureException(ref new String(L"Device not found"));
 	}
-	Bluetooth::BluetoothLEDevice^ device = devices->Lookup(deviceId);
-	auto gattSession = co_await  Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(device->BluetoothDeviceId);
+	Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
+	auto gattSession = co_await Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(device->BluetoothDeviceId);
 	auto size = gattSession->MaxPduSize;
 	co_return JsonValue::CreateNumberValue(size);
 }
-
 
 concurrency::task<void> processCommand(JsonObject ^ command)
 {
@@ -554,14 +552,17 @@ concurrency::task<void> processCommand(JsonObject ^ command)
 	IJsonValue ^ result = nullptr;
 	response->Insert("_type", JsonValue::CreateStringValue("response"));
 	response->Insert("_id", command->GetNamedValue("_id", JsonValue::CreateNullValue()));
-
 	try
 	{
+		if (cmd->Equals("version"))
+		{
+			// Make sure to increment this version on each change
+			result = JsonValue::CreateStringValue("1.0.0");
+		}
 		if (cmd->Equals("ping"))
 		{
 			result = JsonValue::CreateStringValue("pong");
 		}
-
 		if (cmd->Equals("scan"))
 		{
 			bleAdvertisementWatcher->Start();
@@ -594,7 +595,7 @@ concurrency::task<void> processCommand(JsonObject ^ command)
 		}
 		if (cmd->Equals("isPaired"))
 		{
-			result = isPaired(command);
+			result = co_await isPaired(command);
 		}
 		if (cmd->Equals("pair"))
 		{

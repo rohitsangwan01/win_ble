@@ -61,7 +61,7 @@ class _DeviceInfoState extends State<DeviceInfo> {
   }
 
   isPaired(address) async {
-    bool isPaired = await WinBle.isPaired(address);
+    bool isPaired = await WinBle.isPaired(address, forceRefresh: true);
     showNotification("isPaired : $isPaired");
   }
 

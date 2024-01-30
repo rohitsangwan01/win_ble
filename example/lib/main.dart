@@ -27,9 +27,10 @@ class _MyAppState extends State<MyApp> {
 
   void initialize() async {
     await WinBle.initialize(
-      serverPath: await WinServer.path,
+      serverPath: await WinServer.path(),
       enableLog: true,
     );
+    print("WinBle Initialized: ${await WinBle.version()}");
   }
 
   @override

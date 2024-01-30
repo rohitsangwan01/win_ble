@@ -162,19 +162,26 @@ JsonValue ^ canPair(JsonObject ^ command) {
 	return JsonValue::CreateBooleanValue(canPair);
 }
 
-	JsonValue
-	^ isPaired(JsonObject ^ command) {
-		  String ^ deviceId = command->GetNamedString("device", "");
-		  if (!devices->HasKey(deviceId))
-		  {
-			  throw ref new FailureException(ref new String(L"Device not found"));
-		  }
-		  Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
-		  bool isPaired = device->DeviceInformation->Pairing->IsPaired;
-		  return JsonValue::CreateBooleanValue(isPaired);
-	  }
+	concurrency::task<IJsonValue ^> isPaired(JsonObject ^ command)
+{
+	String ^ deviceId = command->GetNamedString("device", "");
+	bool forceRefresh = command->GetNamedBoolean("forceRefresh", false);
+	if (forceRefresh || !devices->HasKey(deviceId))
+	{
+		unsigned long long address = std::stoull(deviceId->Data(), 0, 16);
+		Bluetooth::BluetoothLEDevice ^ device = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(address);
+		co_return JsonValue::CreateBooleanValue(device->DeviceInformation->Pairing->IsPaired);
+	}
+	else if (devices->HasKey(deviceId))
+	{
+		Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
+		co_return JsonValue::CreateBooleanValue(device->DeviceInformation->Pairing->IsPaired);
+	}
 
-	concurrency::task<IJsonValue ^> unPairRequest(JsonObject ^ command)
+	throw ref new FailureException(ref new String(L"Device not found"));
+}
+
+concurrency::task<IJsonValue ^> unPairRequest(JsonObject ^ command)
 {
 	String ^ deviceId = command->GetNamedString("device", "");
 	if (!devices->HasKey(deviceId))

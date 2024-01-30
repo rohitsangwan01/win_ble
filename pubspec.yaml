@@ -14,8 +14,7 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  win32: ^5.0.6
-  ffi: ^2.1.0
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:

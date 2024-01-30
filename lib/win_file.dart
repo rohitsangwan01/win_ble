@@ -15,8 +15,7 @@ class WinServer {
   static Future<File> _getFilePath(String path, String? fileName) async {
     final byteData = await rootBundle.load(path);
     final buffer = byteData.buffer;
-    String? tempPath = (await getTemporaryDirectory()).path;
-    // if (tempPath == null) throw Exception("Could not get temporary path");
+    String tempPath = (await getTemporaryDirectory()).path;
     var initPath = '$tempPath/${fileName ?? 'win_ble_server'}.exe';
     var filePath = initPath;
 

@@ -1,3 +1,10 @@
+## 1.1.1
+
+- Replace `win32` with `path_provider` for getting ble_server path [#38](https://github.com/rohitsangwan01/win_ble/pull/38)
+- Breaking change: `WinServer.path` is now `WinServer.path()`
+- Get ble_server version using `WinBle.version()`
+- Fix: `isPaired` was returning cached result
+
 ## 1.0.2
 
 - Add parameter to discover uncached services [#29](https://github.com/rohitsangwan01/win_ble/pull/29)
@@ -5,7 +12,7 @@
 
 ## 1.0.1
 
-- Added Bluetooth radio related Api : turn on/off programatically
+- Added Bluetooth radio related Api : turn on/off programmatically
 - Added api to get maxMtuSize
 
 ## 1.0.0

@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:win_ble_plus/win_ble.dart';
+import 'package:win_ble/win_ble.dart';
 
 class DeviceInfo extends StatefulWidget {
   final BleDevice device;

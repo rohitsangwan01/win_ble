@@ -3,9 +3,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:win_ble_plus/src/models/ble_state.dart';
-import 'package:win_ble_plus/src/utils/win_connector.dart';
-import 'package:win_ble_plus/src/utils/win_helper.dart';
+import 'package:win_ble/src/models/ble_state.dart';
+import 'package:win_ble/src/utils/win_connector.dart';
+import 'package:win_ble/src/utils/win_helper.dart';
 
 import 'models/ble_characteristic.dart';
 import 'models/ble_device.dart';

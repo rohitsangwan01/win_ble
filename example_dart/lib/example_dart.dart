@@ -1,4 +1,4 @@
-import 'package:win_ble_plus/win_ble.dart';
+import 'package:win_ble/win_ble.dart';
 
 void main() async {
   print("Initializing WinBle");

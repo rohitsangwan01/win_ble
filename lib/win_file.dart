@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
-import 'package:win32/win32.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 class WinServer {
   /// Get path of BleServer from library assets,
@@ -17,8 +15,8 @@ class WinServer {
   static Future<File> _getFilePath(String path, String? fileName) async {
     final byteData = await rootBundle.load(path);
     final buffer = byteData.buffer;
-    String? tempPath = await _getTemporaryPath();
-    if (tempPath == null) throw Exception("Could not get temporary path");
+    String? tempPath = (await getTemporaryDirectory()).path;
+    // if (tempPath == null) throw Exception("Could not get temporary path");
     var initPath = '$tempPath/${fileName ?? 'win_ble_server'}.exe';
     var filePath = initPath;
 
@@ -40,25 +38,5 @@ class WinServer {
 
     return File(filePath).writeAsBytes(
         buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
-  }
-
-  static Future<String?> _getTemporaryPath() async {
-    final Pointer<Utf16> buffer = calloc<Uint16>(MAX_PATH + 1).cast<Utf16>();
-    String path;
-    try {
-      final int length = GetTempPath(MAX_PATH, buffer);
-      if (length == 0) {
-        final int error = GetLastError();
-        throw WindowsException(error);
-      } else {
-        path = buffer.toDartString();
-        if (path.endsWith(r'\')) path = path.substring(0, path.length - 1);
-      }
-      final Directory directory = Directory(path);
-      if (!directory.existsSync()) await directory.create(recursive: true);
-      return path;
-    } finally {
-      calloc.free(buffer);
-    }
   }
 }

@@ -382,7 +382,7 @@ concurrency::task<IJsonValue ^> charactersticsRequest(JsonObject ^ command)
 concurrency::task<IJsonValue ^> readRequest(JsonObject ^ command)
 {
 	auto characteristic = co_await getCharacteristic(command);
-	auto result = co_await characteristic->ReadValueAsync();
+	auto result = co_await characteristic->ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached);
 	if (result->Status != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success)
 	{
 		throw ref new FailureException(result->Status.ToString());

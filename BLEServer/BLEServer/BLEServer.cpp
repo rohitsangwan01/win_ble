@@ -98,6 +98,46 @@ void writeObject(JsonObject ^ jsonObject)
 	LeaveCriticalSection(&OutputCriticalSection);
 }
 
+void onDisconnectionCleanup(Bluetooth::BluetoothLEDevice^ device) {
+	auto newCharacteristicsMap = ref new Collections::Map<String^, Bluetooth::GenericAttributeProfile::GattCharacteristic^>();
+	for (auto pair : characteristicsMap)
+	{
+		bool removed = true;
+		try
+		{
+			auto service = pair->Value->Service;
+			if (service->Device->DeviceId->Equals(device->DeviceId))
+			{
+				delete service->Device;
+				delete service;
+			}
+			else
+			{
+				newCharacteristicsMap->Insert(pair->Key, pair->Value);
+				removed = false;
+			}
+		}
+		catch (...)
+		{
+			// Service is probably already closed, so we just skip it and it will be removed from the list
+		}
+
+		if (removed)
+		{
+			if (characteristicsListenerMap->HasKey(pair->Key))
+			{
+				characteristicsListenerMap->Remove(pair->Key);
+			}
+			if (characteristicsSubscriptionMap->HasKey(pair->Key))
+			{
+				characteristicsSubscriptionMap->Remove(pair->Key);
+			}
+		}
+	}
+	characteristicsMap = newCharacteristicsMap;
+	devices->Remove(device->DeviceId);
+}
+
 concurrency::task<IJsonValue ^> connectRequest(JsonObject ^ command)
 {
 	String ^ addressStr = command->GetNamedString("address", "");
@@ -118,6 +158,9 @@ concurrency::task<IJsonValue ^> connectRequest(JsonObject ^ command)
 				msg->Insert("_type", JsonValue::CreateStringValue("disconnectEvent"));
 				msg->Insert("device", JsonValue::CreateStringValue(device->DeviceId));
 				writeObject(msg);
+
+				// When disconnecting from a device, also remove all the characteristics from our cache.
+				onDisconnectionCleanup(device);
 				devices->Remove(device->DeviceId);
 			}
 		});
@@ -208,43 +251,7 @@ Concurrency::task<IJsonValue ^> disconnectRequest(JsonObject ^ command)
 	Bluetooth::BluetoothLEDevice ^ device = devices->Lookup(deviceId);
 
 	// When disconnecting from a device, also remove all the characteristics from our cache.
-	auto newCharacteristicsMap = ref new Collections::Map<String ^, Bluetooth::GenericAttributeProfile::GattCharacteristic ^>();
-	for (auto pair : characteristicsMap)
-	{
-		bool removed = true;
-		try
-		{
-			auto service = pair->Value->Service;
-			if (service->Device->DeviceId->Equals(device->DeviceId))
-			{
-				delete service->Device;
-				delete service;
-			}
-			else
-			{
-				newCharacteristicsMap->Insert(pair->Key, pair->Value);
-				removed = false;
-			}
-		}
-		catch (...)
-		{
-			// Service is probably already closed, so we just skip it and it will be removed from the list
-		}
-
-		if (removed)
-		{
-			if (characteristicsListenerMap->HasKey(pair->Key))
-			{
-				characteristicsListenerMap->Remove(pair->Key);
-			}
-			if (characteristicsSubscriptionMap->HasKey(pair->Key))
-			{
-				characteristicsSubscriptionMap->Remove(pair->Key);
-			}
-		}
-	}
-	characteristicsMap = newCharacteristicsMap;
-	devices->Remove(deviceId);
+	onDisconnectionCleanup(device);
 
 	return Concurrency::task_from_result<IJsonValue ^>(JsonValue::CreateNullValue());
 }
